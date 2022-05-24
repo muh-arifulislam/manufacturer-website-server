@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const cors = require('cors');
 require('dotenv').config();
+const ObjectId = require('mongodb').ObjectId;
 const port = process.env.PORT || 5000;
 // middleware
 app.use(cors());
@@ -43,6 +44,21 @@ async function run() {
                 },
             };
             const result = await orderCollection.updateOne(filter, updateDoc, options);
+            res.send(result);
+        })
+
+        // get order 
+        app.get('/order/:email', async (req, res) => {
+            const email = req.params.email;
+            const orders = await orderCollection.find({ email }).toArray();
+            res.send(orders);
+        })
+
+        //delete order
+        app.delete('/order/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { id: id };
+            const result = await orderCollection.deleteOne(query);
             res.send(result);
         })
     }
