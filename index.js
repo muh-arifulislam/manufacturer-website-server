@@ -21,11 +21,29 @@ async function run() {
     try {
         await client.connect();
         const toolCollection = client.db('manufacturerWebsite').collection('toolCollection');
+        const orderCollection = client.db('manufacturerWebsite').collection('orders');
+        const userCollection = client.db('manufacturerWebsite').collection('users');
+
+
 
         // get tools 
         app.get('/tool', async (req, res) => {
             const tools = await toolCollection.find({}).toArray();
             res.send(tools);
+        })
+
+        // post order 
+        app.put('/order', async (req, res) => {
+            const { email, isPaid, _id } = req.body;
+            const filter = { email: email, isPaid: isPaid, id: _id };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    data: req.body
+                },
+            };
+            const result = await orderCollection.updateOne(filter, updateDoc, options);
+            res.send(result);
         })
     }
     finally {
