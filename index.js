@@ -17,7 +17,7 @@ app.get('/', (req, res) => {
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.vzpmm.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
-
+const stripe = require("stripe")(`${process.env.PAYMENT_SECRET}`)
 async function run() {
     try {
         await client.connect();
@@ -35,12 +35,22 @@ async function run() {
 
         // post order 
         app.put('/order', async (req, res) => {
-            const { email, isPaid, _id } = req.body;
+            const { name, orderQuantity, email, date, address, totalPrice, customerName, isPaid, _id, transitionId, status } = req.body;
             const filter = { email: email, isPaid: isPaid, id: _id };
             const options = { upsert: true };
             const updateDoc = {
                 $set: {
-                    data: req.body
+                    name: name,
+                    orderQuantity: orderQuantity,
+                    email: email,
+                    date: date,
+                    address: address,
+                    totalPrice: totalPrice,
+                    customerName: customerName,
+                    isPaid: isPaid,
+                    id: _id,
+                    transitionId: transitionId,
+                    status: status,
                 },
             };
             const result = await orderCollection.updateOne(filter, updateDoc, options);
@@ -48,10 +58,16 @@ async function run() {
         })
 
         // get order 
-        app.get('/order/:email', async (req, res) => {
-            const email = req.params.email;
+        app.get('/order', async (req, res) => {
+            const email = req.query.email;
             const orders = await orderCollection.find({ email }).toArray();
             res.send(orders);
+        })
+        app.get('/order/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const result = await orderCollection.findOne(filter);
+            res.send(result)
         })
 
         //delete order
@@ -61,6 +77,47 @@ async function run() {
             const result = await orderCollection.deleteOne(query);
             res.send(result);
         })
+
+        // payment process 
+        app.post('/create-payment-intent', async (req, res) => {
+            const amount = parseInt(req.body.totalPrice) * 100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                automatic_payment_methods: {
+                    enabled: true,
+                },
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        })
+
+        app.put('/update-order', async (req, res) => {
+            const { id, paymentId } = req.body;
+            const transId = paymentId.split('_')[1];
+            console.log(transId);
+            const filter = { _id: ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    isPaid: true,
+                    transitionId: transId,
+                },
+            };
+            const result = await orderCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        })
+        // app.put('/update-tool', async (req, res) => {
+        //     const id = req.params.id;
+        //     const filter = { _id: ObjectId(id) };
+        //     const updateDoc = {
+        //         $set: {
+        //             isPaid: true
+        //         },
+        //     };
+        //     const result = await orderCollection.updateOne(filter, updateDoc);
+        //     res.send(result);
+        // })
     }
     finally {
         // await client.close()
