@@ -75,6 +75,33 @@ async function run() {
             }
         })
 
+        // update user 
+        app.put('/user', verifyJWT, async (req, res) => {
+            const { fullName, email, linkedIn, institute, educationFromYear, educationToYear, number, city, zip, country } = req.body;
+            const decodedEmail = req.decoded.email;
+            const filter = { email };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    name: fullName,
+                    linkedIn: linkedIn,
+                    institute: institute,
+                    session: { educationFromYear, educationToYear },
+                    number: number,
+                    city: city,
+                    zip: zip,
+                    country: country,
+                },
+            };
+            if (decodedEmail === email) {
+                const result = await userCollection.updateOne(filter, updateDoc, options);
+                res.send(result);
+            }
+            else {
+                res.status(403).send({ message: 'forbidden access ' })
+            }
+        })
+
         // get tools 
         app.get('/tool', async (req, res) => {
             const tools = await toolCollection.find({}).toArray();
