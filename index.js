@@ -136,9 +136,17 @@ async function run() {
         app.get('/order', verifyJWT, async (req, res) => {
             const decodedEmail = req.decoded.email;
             const email = req.query.email;
+            const userData = await userCollection.findOne({ email })
             if (decodedEmail === email) {
-                const orders = await orderCollection.find({ email }).toArray();
-                res.send(orders);
+                if (userData.role === 'admin') {
+                    const orders = await orderCollection.find({}).toArray();
+                    res.send(orders);
+                }
+                else {
+                    const orders = await orderCollection.find({ email }).toArray();
+                    res.send(orders);
+                }
+
             }
             else {
                 res.status(403).send({ message: 'forbidden access' })
@@ -156,7 +164,8 @@ async function run() {
             const id = req.params.id;
             const decodedEmail = req.decoded.email;
             const email = req.query.email;
-            const query = { id: id };
+            const query = { _id: ObjectId(id) };
+            console.log(id);
             if (decodedEmail === email) {
                 const result = await orderCollection.deleteOne(query);
                 res.send(result);
@@ -181,6 +190,7 @@ async function run() {
             });
         })
 
+        // update order after payment 
         app.put('/update-order', async (req, res) => {
             const { id, paymentId } = req.body;
             const transId = paymentId.split('_')[1];
@@ -232,6 +242,36 @@ async function run() {
             }
 
         })
+
+        // Admin api
+
+        // get all users 
+        app.get('/user', verifyJWT, async (req, res) => {
+            const decodedEmail = req.decoded.email;
+            const email = req.query.email;
+            if (decodedEmail === email) {
+                const result = await userCollection.find({}).toArray();
+                res.send(result)
+            }
+            else {
+                res.status(403).send({ message: "forbidden access" })
+            }
+        })
+
+        // make user admin 
+        app.put('/make-admin/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) }
+            const updatedDoc = {
+                $set: {
+                    role: "admin"
+                }
+            }
+            const result = await userCollection.updateOne(filter, updatedDoc);
+            res.send(result)
+        })
+
+
     }
     finally {
         // await client.close()
