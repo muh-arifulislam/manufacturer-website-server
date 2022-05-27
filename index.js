@@ -102,10 +102,64 @@ async function run() {
             }
         })
 
+        // update user image 
+        app.put('/user/image/:id', verifyJWT, async (req, res) => {
+            const { image } = req.body;
+            const id = req.params.id;
+            const email = req.query.email;
+            const decodedEmail = req.decoded.email;
+            console.log(id, email, decodedEmail, image);
+            const options = { upsert: true }
+            const filter = { _id: ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    image: image
+                },
+            };
+            if (decodedEmail === email) {
+                const result = await userCollection.updateOne(filter, updateDoc, options);
+                res.send(result);
+            }
+            else {
+                res.status(403).send({ message: 'forbidden access ' })
+            }
+        })
+
+
         // get tools 
         app.get('/tool', async (req, res) => {
             const tools = await toolCollection.find({}).toArray();
             res.send(tools);
+        })
+
+        // post tools 
+        app.post('/tool', verifyJWT, async (req, res) => {
+            const email = req.query.email;
+            const decodedEmail = req.decoded.email;
+            const data = req.body;
+            if (email === decodedEmail) {
+                const result = await toolCollection.insertOne(data);
+                res.send(result);
+            }
+            else {
+                res.status(403).send({ message: "forbidden access" })
+            }
+        })
+
+
+        // delete tool 
+        app.delete('/tool/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const email = req.query.email;
+            const decodedEmail = req.decoded.email;
+            const filter = { _id: ObjectId(id) };
+            if (decodedEmail === email) {
+                const result = await toolCollection.deleteOne(filter);
+                res.send(result);
+            }
+            else {
+                res.status(403).send({ message: "forbidden access" })
+            }
         })
 
         // post order 
@@ -243,8 +297,6 @@ async function run() {
 
         })
 
-        // Admin api
-
         // get all users 
         app.get('/user', verifyJWT, async (req, res) => {
             const decodedEmail = req.decoded.email;
@@ -271,7 +323,10 @@ async function run() {
             res.send(result)
         })
 
+        // delete tool 
+        // app.delete('/tool', async (req, res) => {
 
+        // })
     }
     finally {
         // await client.close()
