@@ -41,6 +41,7 @@ async function run() {
         const orderCollection = client.db('manufacturerWebsite').collection('orders');
         const userCollection = client.db('manufacturerWebsite').collection('users');
         const reviewCollection = client.db('manufacturerWebsite').collection('reviews');
+        const messageCollection = client.db('manufacturerWebsite').collection('message');
 
 
         // provide jwttoken 
@@ -233,7 +234,7 @@ async function run() {
             if (operation === "deliver") {
                 updateDoc = {
                     $set: {
-                        status: "delivered"
+                        status: "shifted"
                     }
                 }
             }
@@ -362,10 +363,12 @@ async function run() {
             res.send(result)
         })
 
-        // delete tool 
-        // app.delete('/tool', async (req, res) => {
-
-        // })
+        // sent message 
+        app.post('/message', async (req, res) => {
+            const data = req.body;
+            const result = await messageCollection.insertOne(data);
+            res.send(result);
+        })
     }
     finally {
         // await client.close()
