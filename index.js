@@ -213,6 +213,39 @@ async function run() {
             res.send(result)
         })
 
+        // update order status 
+        app.put('/order/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const email = req.query.email;
+            const decodedEmail = req.decoded.email;
+            const { operation } = req.body;
+            const filter = { _id: ObjectId(id) };
+            let updateDoc;
+            if (operation === "payment") {
+                updateDoc = {
+                    $set: {
+                        isPaid: "paid",
+                        transitionId: "paidbyadmin",
+                        status: "pending",
+                    }
+                }
+            }
+            if (operation === "deliver") {
+                updateDoc = {
+                    $set: {
+                        status: "delivered"
+                    }
+                }
+            }
+            if (decodedEmail === email) {
+                const result = await orderCollection.updateOne(filter, updateDoc);
+                res.send(result)
+            }
+            else {
+                res.status(403).send({ message: "forbidden access" })
+            }
+        })
+
         //delete order
         app.delete('/order/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
