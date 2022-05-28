@@ -308,6 +308,12 @@ async function run() {
             res.send(result);
         })
 
+        // get all review 
+        app.get('/reviews', async (req, res) => {
+            const result = await reviewCollection.find({}).toArray();
+            res.send(result);
+        })
+
         // add review 
         app.post('/review', async (req, res) => {
             const data = req.body;
