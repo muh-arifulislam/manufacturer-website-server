@@ -54,6 +54,13 @@ async function run() {
     const messageCollection = client
       .db("manufacturerWebsite")
       .collection("message");
+    const workCollection = client.db("manufacturerWebsite").collection("works");
+
+    // get all works
+    app.get("/works", async (req, res) => {
+      const data = await workCollection.find({}).toArray();
+      res.send(data);
+    });
 
     // provide jwttoken
     app.put("/user/:email", async (req, res) => {
