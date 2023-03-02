@@ -7,7 +7,17 @@ require("dotenv").config();
 const ObjectId = require("mongodb").ObjectId;
 const port = process.env.PORT || 5000;
 // middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "https://manufacturer-website-5d7b0.web.app/",
+      "http://localhost:3000",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 app.get("/", (req, res) => {
